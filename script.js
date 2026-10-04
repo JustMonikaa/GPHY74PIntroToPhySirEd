@@ -1,10 +1,17 @@
 // ===== ANTI-INSPECT / ANTI-CHEAT =====
-// Prevents basic Right Click and common F12 / DevTools shortcuts
 document.addEventListener('contextmenu', event => event.preventDefault());
 document.addEventListener('keydown', event => {
   if (event.key === 'F12' || (event.ctrlKey && event.shiftKey && (event.key === 'I' || event.key === 'C' || event.key === 'J'))) {
     event.preventDefault();
   }
+});
+
+// Disable Copy/Cut/Paste Actions Globally
+['copy', 'cut', 'paste'].forEach(ev => {
+  document.addEventListener(ev, (e) => {
+    e.preventDefault();
+    if (_TR.phase !== 'watching') _TR.copyPasteCount++;
+  });
 });
 
 // ===== 15 VERIFIED EDUCATIONAL DOMAIN DATA SETS =====
@@ -222,7 +229,7 @@ const hudScr = document.getElementById('hudScore');
 let currentVideoOpenTime = 0;
 let accumulatedVideoTime = 0;
 
-// YT Modal Logic
+// ===== YT MODAL LOGIC =====
 const ytModal = document.getElementById('yt-modal');
 const ytIframe = document.getElementById('yt-iframe');
 const ytFallbackLink = document.getElementById('yt-fallback-link');
@@ -237,6 +244,10 @@ closeYt.addEventListener('click', () => {
     accumulatedVideoTime += (Date.now() - currentVideoOpenTime);
     currentVideoOpenTime = 0;
   }
+  
+  // Resume strict tracking once the video is closed
+  _TR.phase = 'reading'; 
+  _touchActivity(); 
   
   const activeTrialBlock = container.querySelector('.trial-block');
   const ytBtn = container.querySelector('.yt-btn');
@@ -261,13 +272,12 @@ function shuffleArray(array) {
 function renderStage(index) {
   const data = domainData[index];
   
-  // Prep choices & maintain correct answer only in JS memory (Anti-Cheat)
+  // Prep choices
   let options = data.wrong.map(txt => ({ text: txt, isCorrect: false }));
   options.push({ text: data.correct, isCorrect: true });
   options = shuffleArray(options);
   const letters = ['A', 'B', 'C', 'D'];
 
-  // Notice: 'data-correct' has been removed from the HTML string completely
   let html = `
     <div class="card stage active">
       <div class="guide-head"><span class="chip" style="color:var(--accent-cyan); border-color:var(--accent-cyan);">Abyssal Guide</span></div>
@@ -298,7 +308,7 @@ function renderStage(index) {
   
   container.innerHTML = html;
   
-  // Render KaTeX
+  // Render KaTeX for questions/lecture
   renderMathInElement(container, { delimiters: [ {left: "$", right: "$", display: false} ] });
 
   const ytBtn = container.querySelector('.yt-btn');
@@ -306,7 +316,10 @@ function renderStage(index) {
     ytIframe.src = `https://www.youtube-nocookie.com/embed/${data.ytId}?rel=0`;
     ytFallbackLink.href = `https://www.youtube.com/watch?v=${data.ytId}`;
     ytModal.style.display = 'flex';
-    currentVideoOpenTime = Date.now(); // Start measuring video duration
+    
+    // START SAFE ZONE: Pause tracking penalties while watching
+    currentVideoOpenTime = Date.now();
+    _TR.phase = 'watching'; 
   });
 
   const choices = container.querySelectorAll('.choice');
@@ -324,7 +337,6 @@ function renderStage(index) {
       const optIdx = this.getAttribute('data-idx');
       const isCorrect = options[optIdx].isCorrect;
       
-      // Update styling based on internal JS state, not DOM attributes
       choices.forEach(c => {
         const cIdx = c.getAttribute('data-idx');
         if(options[cIdx].isCorrect) c.classList.add('correct');
@@ -403,13 +415,19 @@ var _TR = {
   lastActivityTime: Date.now(), idleTimer: null, phase: 'intro',
 };
 
-document.addEventListener('visibilitychange', () => { if (document.hidden) _TR.tabSwitches++; });
-['copy', 'paste', 'cut'].forEach(ev => document.addEventListener(ev, () => _TR.copyPasteCount++));
+// Only penalize tab switches if they aren't safely watching a video
+document.addEventListener('visibilitychange', () => { 
+  if (document.hidden && _TR.phase !== 'watching') {
+    _TR.tabSwitches++; 
+  }
+});
 
 function _touchActivity() {
   _TR.lastActivityTime = Date.now();
   clearTimeout(_TR.idleTimer);
-  _TR.idleTimer = setTimeout(() => { if (_TR.phase === 'reading') _TR.idlePauses++; }, 30000);
+  _TR.idleTimer = setTimeout(() => { 
+    if (_TR.phase === 'reading') _TR.idlePauses++; 
+  }, 30000);
 }
 ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll'].forEach(ev => {
   document.addEventListener(ev, _touchActivity, { passive: true });
@@ -419,7 +437,7 @@ document.addEventListener('scroll', () => {
   var now = Date.now();
   var dy = Math.abs(window.scrollY - _TR.lastScrollY);
   var dt = now - _TR.lastScrollTime;
-  if (dy > 500 && dt < 400) _TR.scrollJumps++;
+  if (dy > 500 && dt < 400 && _TR.phase !== 'watching') _TR.scrollJumps++;
   _TR.lastScrollY = window.scrollY;
   _TR.lastScrollTime = now;
 }, { passive: true });
@@ -427,7 +445,6 @@ document.addEventListener('scroll', () => {
 function _recordAnswer(sec, isCorrect) {
   var now = Date.now();
   var rawReadTime = now - (_TR.sectorStartTime || now);
-  // Subtract video watch time so it doesn't penalize their reading pace
   var adjustedReadTime = Math.max(0, rawReadTime - accumulatedVideoTime);
   
   if (!_TR.sectorData[sec]) {
@@ -439,7 +456,7 @@ function _recordAnswer(sec, isCorrect) {
     };
   }
   _TR.phase = 'answered';
-  accumulatedVideoTime = 0; // Reset video accumulator for next chamber
+  accumulatedVideoTime = 0; 
 }
 
 function _recordNext(sec) {
@@ -549,24 +566,24 @@ var _NATIONS = {
     emoji: '🌬️', element: 'Anemo', color: '#7ed6f5', 
     image: 'https://static0.fextralifeimages.com/file/genshinimpact/5/5d/Anemo-element-genshin-impact-wiki-guide.png', 
     desc: (s, name) => [
-      `Like the Anemo Archon Barbatos guiding a glider through a storm, ${name}'s pacing was breezy, instinctual, and wonderfully unburdened by overthinking. The data shows a smooth traversal through the Abyss with a relaxed confidence.`,
-      "The City of Freedom values intuition over rigid, exhausting calculation. You navigated the harsh constraints of physics with a free spirit, skipping the tedious hesitation that plagues lesser scholars, and letting the winds of probability carry you. A true Outrider of the physical laws."
+      `Like the Anemo Archon Barbatos guiding a glider through a storm, ${name}'s pacing through this asynchronous module was breezy and wonderfully unburdened by overthinking. The data shows a smooth, relaxed traversal through the introductory concepts.`,
+      "The City of Freedom values intuition over exhausting calculation. You navigated these foundational physics constraints with a free spirit, skipping tedious hesitation and letting your natural curiosity carry you. A true Outrider of the physical laws."
     ]
   },
   Liyue: { 
-    emoji: '⚖️', element: 'Geo', color: '#ffc94d', 
+    emoji: '⚖️️', element: 'Geo', color: '#ffc94d', 
     image: 'https://static0.fextralifeimages.com/file/genshinimpact/5/51/Geo-element-genshin-impact-wiki-guide.png',
     desc: (s, name) => [
-      `Deliberate, unyielding, and meticulous. The Archives indicate that ${name} assessed every chamber of the Abyss with the careful eye of an appraiser determining the worth of Cor Lapis. No sudden movements, just steady, calculated progression.`,
-      "Liyue Harbor is built on contracts and solid stone under the watchful eye of Rex Lapis. You did not rush; you absorbed the fundamental laws of reality, ensuring your mathematical foundation was completely unshakable before striking your final answer."
+      `Deliberate, unyielding, and meticulous. The Archives indicate that ${name} assessed every part of this asynchronous module with the careful eye of an appraiser determining the worth of Cor Lapis. No sudden movements, just steady, calculated learning.`,
+      "Liyue Harbor is built on solid stone under the watchful eye of Rex Lapis. You did not rush this assignment; you absorbed the fundamental laws of reality, ensuring your mathematical foundation was completely unshakable before locking in your final answers."
     ]
   },
   Inazuma: { 
     emoji: '⚡', element: 'Electro', color: '#c39dff', 
     image: 'https://static0.fextralifeimages.com/file/genshinimpact/5/53/Electro-element-genshin-impact-wiki-guide.png',
     desc: (s, name) => [
-      `Striking with the focus of a drawn blade. ${name} cleared the domain with zero distractions, maintaining a pacing that was sharp, intensely efficient, and lethal to error. The records show almost no straying from the path.`,
-      "Inazuma reveres eternity through perfection. You shut out the noise of the outside world, maintaining an ironclad discipline and unwavering resolve that the Almighty Raiden Shogun herself would commend."
+      `Striking with the focus of a drawn blade. ${name} cleared this self-paced module with zero distractions, maintaining a pacing that was sharp, intensely efficient, and lethal to error. The records show almost no straying from the active tab.`,
+      "Inazuma reveres eternity through perfection. You shut out the noise of the outside world to focus on this introductory lecture, maintaining an ironclad discipline and unwavering resolve that the Almighty Raiden Shogun herself would commend."
     ]
   },
   Sumeru: { 
@@ -574,11 +591,11 @@ var _NATIONS = {
     image: 'https://static0.fextralifeimages.com/file/genshinimpact/1/18/Dendro-element-genshin-impact-wiki-guide.png', 
     desc: (s, name) => {
       let text = s.outsideHelp 
-        ? "Your tactical departures from the trial suggest you brilliantly interfaced with the Akasha—or external archives—to verify the truth." 
-        : "Your blistering pace implies a devastatingly sharp intellect, slicing through complex logic before the ink was even dry.";
+        ? "Your tactical tab-switches and departures from the trial suggest you brilliantly interfaced with the Akasha—or external archives—to verify the truth during your study session." 
+        : "Your blistering pace implies a devastatingly sharp intellect, slicing through complex logic before the ink on the lecture was even dry.";
       return [
-        `Wisdom is a weapon, and ${name} wields it effortlessly. You deciphered the mechanisms of reality with terrifying speed. ${text}`,
-        "Sumeru, the Nation of Wisdom overseen by Lesser Lord Kusanali, holds that knowledge is paramount above all else. Whether born of natural brilliance or scholarly resourcefulness, your ability to extract correct universal laws is undeniable."
+        `Wisdom is a weapon, and ${name} wields it effortlessly. You deciphered the introductory mechanics of reality with terrifying speed. ${text}`,
+        "Sumeru, the Nation of Wisdom, holds that knowledge is paramount above all else. Whether born of natural brilliance or highly resourceful study habits during this async task, your ability to extract correct universal laws is undeniable."
       ];
     }
   },
@@ -586,32 +603,32 @@ var _NATIONS = {
     emoji: '💧', element: 'Hydro', color: '#5bb8ff', 
     image: 'https://static0.fextralifeimages.com/file/genshinimpact/d/db/Hydro-element-genshin-impact-wiki-guide.png', 
     desc: (s, name) => [
-      `Every trial is a stage, and ${name} played their part with dramatic flair. The telemetry shows pauses for suspense, theatrical departures, and sudden flashes of insight that characterized this entire Abyssal run.`,
-      "In the Nation of Hydro, overseen by the Iudex Neuvillette, spectacle is just as important as the final verdict. You didn't merely solve the laws of physics—you performed them, turning a rigid examination into a chaotic masterpiece worthy of the Opera Epiclese."
+      `Every lecture is a stage, and ${name} played their part with dramatic flair. The telemetry for your asynchronous session shows pauses for suspense, theatrical tab switches, and sudden flashes of insight that characterized this entire run.`,
+      "In the Nation of Hydro, spectacle is just as important as the final verdict. You didn't merely complete a physics assignment—you performed it, turning a self-paced quiz into a chaotic masterpiece worthy of the Opera Epiclese."
     ]
   },
   Natlan: { 
     emoji: '🔥', element: 'Pyro', color: '#ff8c42', 
     image: 'https://static0.fextralifeimages.com/file/genshinimpact/2/2c/Pyro-element-genshin-impact-wiki-guide.png', 
     desc: (s, name) => [
-      `Bold, impulsive, and burning with momentum. ${name} charged into the trials before the dust settled, choosing swift action over careful deliberation. The pacing was aggressive, leaving little room for second-guessing.`,
-      "Natlan is forged in the fires of war and raw instinct. You proved that sometimes, survival in the Night Kingdom requires leaping first and recalibrating the math later. The Pyro Archon favors the brave over the cautious."
+      `Bold, impulsive, and burning with momentum. ${name} charged into the async trials before the dust settled, choosing swift action over careful deliberation. The pacing was aggressive, leaving little room for second-guessing the foundational concepts.`,
+      "Natlan is forged in the fires of war and raw instinct. You proved that sometimes, surviving an introductory physics assignment requires leaping first and recalibrating the math later. The Pyro Archon favors the brave over the cautious."
     ]
   },
   Snezhnaya: { 
     emoji: '❄️', element: 'Cryo', color: '#a0d4ff', 
     image: 'https://static0.fextralifeimages.com/file/genshinimpact/f/fc/Cryo-element-genshin-impact-wiki-guide.png', 
     desc: (s, name) => [
-      `Clinical, calculating, and coldly efficient. ${name} treated the fundamental laws of the universe as mission objectives—assessed, executed, and completed without wasted motion or unnecessary hesitation.`,
-      "Snezhnaya demands absolute order and results. In the dark of the Abyss, you brought a chilling competence that left no room for sentimentality or doubt. The Tsaritsa and her Harbingers respect nothing but flawless execution."
+      `Clinical, calculating, and coldly efficient. ${name} treated this foundational physics assignment as a strict mission objective—assessed, executed, and completed without wasted motion or unnecessary hesitation.`,
+      "Snezhnaya demands absolute order and results. Even in an unmonitored asynchronous setup, you brought a chilling competence that left no room for sentimentality or doubt. The Tsaritsa and her Harbingers respect nothing but flawless execution."
     ]
   },
   NodKrai: { 
     emoji: '🌨️', element: 'Abyssal Frost', color: '#8b9bb4', 
     image: 'https://static.wikia.nocookie.net/gensin-impact/images/3/37/Talent_Law_of_the_New_Moon.png/revision/latest?cb=20260115185658',
     desc: (s, name) => [
-      `Lost in the blinding snow of complex variables, ${name}'s traversal was marked by hesitation and wandering. The fundamental truths proved elusive in the dark, leading to a journey defined by stillness and fragmented focus.`,
-      "Nod'Krai represents the frozen edge of the map, echoing the lost realm of Khaenri'ah where travelers often lose their way. Yet, surviving the storm and arriving at the end—regardless of the final score—is its own form of abyssal victory."
+      `Lost in the blinding snow of complex variables, ${name}'s traversal of this introductory module was marked by hesitation and wandering. The fundamental truths proved elusive, leading to a session defined by stillness and fragmented focus.`,
+      "Nod'Krai represents the frozen edge of the map where travelers often lose their way. Yet, pushing through a difficult asynchronous lecture and arriving at the end—regardless of the final score—is its own form of abyssal victory."
     ]
   }
 };
