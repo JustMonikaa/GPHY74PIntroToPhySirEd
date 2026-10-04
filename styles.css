@@ -1,33 +1,8 @@
-/*
-================================================================
-CUSTOM FONTS CONFIGURATION
-================================================================
-To use custom fonts:
-1. Upload your font files (e.g., .woff2, .ttf) to your directory.
-2. Uncomment the @font-face blocks below and update the URLs.
-3. Update the variables in the :root block to match your custom font names.
-*/
-
-/*
-@font-face {
-  font-family: 'MyMainFont';
-  src: url('fonts/MyMainFont.woff2') format('woff2');
-  font-weight: normal;
-}
-@font-face {
-  font-family: 'MyTitleFont';
-  src: url('fonts/MyTitleFont.woff2') format('woff2');
-  font-weight: bold;
-}
-*/
-
 :root {
-  /* Font Variables - Swap these out for your custom fonts if needed */
   --main-font: 'Inter', sans-serif;
   --title-font: 'Cinzel', serif;
   --accent-font: 'Orbitron', sans-serif;
 
-  /* Color Palette */
   --bg-base: #060814;
   --abyss-dark: #0a0e1c;
   --border-gold: #d4af37;
@@ -41,7 +16,24 @@ To use custom fonts:
   --nation-tint: transparent;
 }
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
+* { 
+  box-sizing: border-box; 
+  margin: 0; 
+  padding: 0; 
+  /* Global Anti-Highlight / Text Selection */
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+/* Allow selection inside input fields so students can type their names naturally */
+input[type="text"] {
+  -webkit-user-select: auto;
+  -moz-user-select: auto;
+  -ms-user-select: auto;
+  user-select: auto;
+}
 
 body {
   font-family: var(--main-font);
@@ -52,7 +44,6 @@ body {
   overflow-x: hidden;
 }
 
-/* Abyssal Background Animation & Dynamic Tint */
 #abyss-bg {
   position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
   z-index: -2;
@@ -66,7 +57,6 @@ body {
   opacity: 0.5; transition: background 1.5s ease;
 }
 
-/* Dense Starfield */
 .stars {
   position: absolute; width: 2px; height: 2px; background: transparent;
   box-shadow: 10vw 5vh #fff, 20vw 15vh #fff, 35vw 8vh #fff, 50vw 2vh #fff, 65vw 12vh #fff, 80vw 6vh #fff, 95vw 18vh #fff,
@@ -105,7 +95,6 @@ body {
 
 #introStage { margin: auto; } 
 
-/* ---------- Progress bar ---------- */
 .progress-shell {
   position: sticky; top: 0; z-index: 50; background: rgba(6, 8, 20, 0.85); backdrop-filter: blur(10px);
   border-bottom: 1px solid rgba(212, 175, 55, 0.3); padding: 12px 0; margin-bottom: 28px; display: none;
@@ -115,7 +104,6 @@ body {
 .progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent-purple), var(--border-gold)); transition: width 0.5s ease; }
 .hud { font-family: var(--accent-font); font-size: 0.72rem; letter-spacing: 0.15em; color: var(--border-gold); white-space: nowrap; }
 
-/* ---------- Cards ---------- */
 .card {
   background: linear-gradient(145deg, rgba(16, 23, 45, 0.8), rgba(10, 14, 28, 0.9));
   border: 1px solid var(--border-glow); border-radius: 12px; padding: 34px 30px; margin-bottom: 22px;
@@ -126,7 +114,6 @@ body {
 .stage.active { display: block; }
 @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
 
-/* ---------- Typography & Buttons ---------- */
 .domain-tag {
   font-family: var(--accent-font); font-size: 0.75rem; letter-spacing: 0.4em;
   color: var(--border-gold); text-transform: uppercase; margin-bottom: 12px;
@@ -162,7 +149,6 @@ h3 { font-family: var(--title-font); font-size: 1.35rem; color: #fff; margin-bot
 .btn.ghost { background: transparent; color: var(--border-gold); border: 1px solid var(--border-gold); box-shadow: none; }
 .btn.ghost:hover { background: rgba(212, 175, 55, 0.1); box-shadow: 0 0 15px rgba(212, 175, 55, 0.3); }
 
-/* ---------- YouTube Modal ---------- */
 #yt-modal {
   display: none; position: fixed; inset: 0; z-index: 2000;
   background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px);
@@ -183,7 +169,6 @@ h3 { font-family: var(--title-font); font-size: 1.35rem; color: #fff; margin-bot
 .yt-fallback-container a { color: var(--accent-cyan); text-decoration: underline; font-size: 0.85rem; font-family: var(--main-font); }
 .yt-fallback-container a:hover { color: #fff; }
 
-/* ---------- Trials ---------- */
 .trial { margin-top: 32px; padding-top: 26px; border-top: 1px dashed rgba(212, 175, 55, 0.3); }
 .trial-tag { font-family: var(--accent-font); font-size: 0.75rem; letter-spacing: 0.25em; color: var(--accent-purple); text-transform: uppercase; margin-bottom: 12px; }
 .trial-q { font-family: var(--title-font); font-size: 1.25rem; font-weight: 600; color: #fff; line-height: 1.5; margin-bottom: 22px; }
@@ -212,7 +197,6 @@ h3 { font-family: var(--title-font); font-size: 1.35rem; color: #fff; margin-bot
 .next-row { display: none; margin-top: 24px; text-align: right; }
 .next-row.show { display: block; }
 
-/* ===== TRACKER OVERLAY STYLES ===== */
 #tracker-overlay {
   display: none; position: fixed; inset: 0; z-index: 999;
   background: rgba(6, 8, 20, 0.6); backdrop-filter: blur(8px);
@@ -231,7 +215,6 @@ h3 { font-family: var(--title-font); font-size: 1.35rem; color: #fff; margin-bot
 }
 #tr-name-input:focus { border-color: var(--border-gold); box-shadow: 0 0 15px rgba(212, 175, 55, 0.3); }
 
-/* Result Screen */
 .tr-nation-name {
   font-family: var(--title-font); font-size: clamp(2.5rem, 8vw, 4.5rem); font-weight: 900;
   line-height: 1.1; display: block; margin-bottom: 10px; text-align: center; text-transform: uppercase;
