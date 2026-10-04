@@ -1,0 +1,681 @@
+// ===== ANTI-INSPECT / ANTI-CHEAT =====
+// Prevents basic Right Click and common F12 / DevTools shortcuts
+document.addEventListener('contextmenu', event => event.preventDefault());
+document.addEventListener('keydown', event => {
+  if (event.key === 'F12' || (event.ctrlKey && event.shiftKey && (event.key === 'I' || event.key === 'C' || event.key === 'J'))) {
+    event.preventDefault();
+  }
+});
+
+// ===== 15 VERIFIED EDUCATIONAL DOMAIN DATA SETS =====
+const domainData = [
+  {
+    title: "Chamber 1 — The Essence of Physics",
+    lecture: `Physics is the fundamental science dedicated to understanding how the universe behaves at its most basic level. Historically known as <b>natural philosophy</b>, it transitioned into a rigorous empirical science. Its ultimate goal is not merely to catalogue observations, but to formulate universal mathematical laws that apply everywhere—from the microscopic interactions of atoms to the macroscopic collisions of galaxies.`,
+    ytId: "yWMKYID5fr8", 
+    question: "Which statement best describes the fundamental objective of physics?",
+    correct: "To formulate universal laws that mathematically describe and predict the underlying mechanisms of the universe.",
+    wrong: [
+      "To classify all biological and natural phenomena into distinct philosophical categories based on pure logic.",
+      "To observe nature strictly without relying on predictive frameworks, accepting that the universe is fundamentally random.",
+      "To prove that celestial mechanics and terrestrial mechanics operate under completely disconnected physical laws."
+    ],
+    explanation: "Physics seeks universal laws and predictive mechanisms. It left pure 'natural philosophy' behind in favor of empirical, mathematical frameworks."
+  },
+  {
+    title: "Chamber 2 — Galileo's Rebellion",
+    lecture: `Before the 16th century, Aristotelian dogma dictated that heavy objects fall faster than light ones. <b>Galileo Galilei</b> shattered this paradigm. By prioritizing empirical observation and experiment over ancient authority, he proved that (in the absence of air resistance) all objects experience <span class="hl">free fall at the exact same rate</span>, regardless of mass. He effectively invented the modern scientific method.`,
+    ytId: "QyeF-_QPSbk", 
+    question: "What was Galileo’s most revolutionary conceptual contribution to the study of motion?",
+    correct: "Proving through empirical experiment that objects in free fall accelerate at the same rate regardless of their mass.",
+    wrong: [
+      "Formulating the theory of universal gravitation that linked planetary orbits to falling apples.",
+      "Discovering that air resistance is the only force in the universe that contains mass.",
+      "Confirming the Aristotelian view that heavier objects naturally seek the center of the Earth faster than lighter ones."
+    ],
+    explanation: "Galileo used experiment to disprove Aristotle, showing all masses fall at the same rate in a vacuum."
+  },
+  {
+    title: "Chamber 3 — Newton's Unification",
+    lecture: `<b>Isaac Newton</b> synthesized the chaotic observations of his predecessors into a unified framework in his 1687 masterwork, the <i>Principia</i>. He realized that the exact same force pulling an apple to the ground is the force keeping the Moon in orbit around the Earth. This <span class="hl">universal law of gravitation</span>, combined with his three laws of motion, successfully unified terrestrial and celestial mechanics.`,
+    ytId: "JGO_zDWmkvk", 
+    question: "What was the most profound implication of Newton's law of universal gravitation?",
+    correct: "It demonstrated that the same physical laws govern both objects on Earth and celestial bodies in space.",
+    wrong: [
+      "It proved that the solar system relies on a continuous mechanical engine to prevent planets from slowing down.",
+      "It unified electricity and magnetism into a single mathematical framework.",
+      "It established that light acts as both a particle and a wave, depending on gravitational interference."
+    ],
+    explanation: "Newton's greatest triumph was showing that Earthly physics and Space physics are one and the same."
+  },
+  {
+    title: "Chamber 4 — Maxwell and the Power of Prediction",
+    lecture: `Physics possesses a terrifying power: the ability to predict phenomena before they are ever observed. In the 1860s, <b>James Clerk Maxwell</b> unified electricity and magnetism into a single set of equations. His math unexpectedly demanded the existence of <span class="hl">electromagnetic waves</span> traveling at the speed of light. Decades later, these predicted waves were discovered, giving birth to radio, television, Wi-Fi, and modern telecommunications.`,
+    ytId: "ZAkRoCMhzeQ", 
+    question: "How did Maxwell's equations demonstrate the predictive power of physics?",
+    correct: "They mathematically proved the existence of electromagnetic waves decades before humans could artificially generate or detect them.",
+    wrong: [
+      "They provided the blueprint for building the first physical radio transmitter using purely Aristotelian logic.",
+      "They predicted the exact atomic weight of Radium before Marie Curie discovered it.",
+      "They solved the issue of gravity, predicting exactly how rockets could escape Earth's atmosphere."
+    ],
+    explanation: "Maxwell's math forced the conclusion that EM waves must exist. They were discovered empirically years later based on his equations."
+  },
+  {
+    title: "Chamber 5 — Measurement: The Bedrock of Reality",
+    lecture: `To formulate laws, physics requires quantitative data. Qualitative statements ("it is fast") are useless. We need exact measurements. A measurement's quality is defined by its <span class="hl">accuracy</span> (how close it is to the absolute true value) and its <span class="hl">precision</span> (how consistently the measurement can be repeated). If data cannot be trusted, the laws built upon it will collapse.`,
+    ytId: "2wUsdsae0ro", 
+    question: "Why must physics rely on quantitative measurement rather than qualitative observation?",
+    correct: "Because exact numerical data is required to formulate, test, and verify universal mathematical laws.",
+    wrong: [
+      "Because qualitative observations cannot be written down in laboratory notebooks.",
+      "Because the true value of any physical property changes depending on the observer's emotional state.",
+      "Because quantitative measurements completely eliminate the need for precision and accuracy."
+    ],
+    explanation: "Without quantitative numbers, you cannot build math. Without math, you cannot have physics."
+  },
+  {
+    title: "Chamber 6 — The Mars Climate Orbiter Disaster",
+    lecture: `In 1999, NASA lost the $327$ million <b>Mars Climate Orbiter</b>. The spacecraft burned up in the Martian atmosphere. The root cause was a devastating failure of unit standardization: one engineering team calculated thrust in English units (pound-seconds), while the navigation team assumed the data was in metric units (newton-seconds). Without unified metrics, engineering becomes lethal.`,
+    ytId: "4DXFurrTM_g", 
+    question: "What fundamental failure caused the destruction of the Mars Climate Orbiter?",
+    correct: "A discrepancy in unit standardization between teams using metric and English systems.",
+    wrong: [
+      "A miscalculation of the gravitational constant by the mission's lead astrophysicist.",
+      "A failure of Maxwell's equations to predict the communication delay between Earth and Mars.",
+      "A systematic error caused by a poorly calibrated thermometer measuring the Martian atmosphere."
+    ],
+    explanation: "The orbiter was lost strictly because one team used imperial units and the other used metric units, causing wrong trajectory commands."
+  },
+  {
+    title: "Chamber 7 — The Absolute Necessity of SI Units",
+    lecture: `To prevent disasters like the Mars Orbiter, the global scientific community strictly adheres to the <span class="hl">International System of Units (SI)</span>. By universally agreeing on what constitutes a meter, a kilogram, or a second, scientists ensure that their experimental results are <b>reproducible</b>. If an experiment in Tokyo cannot be precisely replicated in Berlin due to confusing units, the science is invalid.`,
+    ytId: "7bUVjJWA6Vw", 
+    question: "What is the primary purpose of adopting a global standard like the SI unit system?",
+    correct: "To ensure that experimental data is universally understood, verifiable, and strictly reproducible across the globe.",
+    wrong: [
+      "To force all countries to abandon their cultural measurement systems for civilian applications.",
+      "To make physics calculations infinitely more precise than older measurement systems allowed.",
+      "To eliminate random errors entirely from all laboratory environments."
+    ],
+    explanation: "SI units allow global collaboration and reproducibility, the cornerstone of the scientific method."
+  },
+  {
+    title: "Chamber 8 — Accuracy vs. Precision: Conceptual",
+    lecture: `Imagine an archer. <b>Accuracy</b> is hitting the bullseye (the true value). <b>Precision</b> is hitting the exact same spot on the target over and over again, regardless of where that spot is. An instrument with a <span class="hl">systematic error</span> (like a scale that starts at $2.0$ kg instead of $0.0$ kg) will give highly precise readings that are completely inaccurate.`,
+    ytId: "hRAFPdDppzs", 
+    question: "Which scenario describes a measurement system that is highly precise but highly inaccurate?",
+    correct: "An archer who fires five arrows into a tightly packed cluster in the far upper-right corner of the target.",
+    wrong: [
+      "An archer who hits the absolute dead-center bullseye with a single, perfectly aimed arrow.",
+      "An archer whose arrows scatter wildly all across the board, missing the bullseye completely.",
+      "An archer who fires arrows that alternate evenly between hitting the bullseye and missing the target."
+    ],
+    explanation: "Tight clustering equals precision. Missing the bullseye entirely equals inaccuracy."
+  },
+  {
+    title: "Chamber 9 — Accuracy vs. Precision: Mathematical",
+    lecture: `Let's apply the concept to numbers. The true, verified mass of a platinum cylinder is exactly $5.00$ g. A student uses an uncalibrated digital scale and takes three measurements. The scale reads $7.11$ g, $7.12$ g, and $7.11$ g.`,
+    ytId: "TzLnO04uO30", 
+    question: "How would a physicist classify the student's mass measurements of the platinum cylinder?",
+    correct: "The measurements are extremely precise, but severely inaccurate.",
+    wrong: [
+      "The measurements are highly accurate, but lack precision due to digital fluctuation.",
+      "The measurements are both highly accurate and highly precise.",
+      "The measurements are neither accurate nor precise."
+    ],
+    explanation: "The numbers are very close to each other (precise) but very far from the true value of $5.00$ g (inaccurate)."
+  },
+  {
+    title: "Chamber 10 — The Foundation: SI Base Units",
+    lecture: `The entire complexity of physics can be mapped back to just seven fundamental <b>SI Base Units</b>. Everything else is a combination of these seven. The critical three used in mechanics are the <b>meter (m)</b> for length, the <b>second (s)</b> for time, and the <span class="hl">kilogram (kg)</span> for mass. Notice that the kilogram is the only base unit that inherently includes a prefix ("kilo"). The "gram" is not the base unit.`,
+    ytId: "O8oZFaaJTUc", 
+    question: "Which of the following correctly identifies the SI Base Unit for mass?",
+    correct: "The kilogram ($kg$)",
+    wrong: [
+      "The gram ($g$)",
+      "The Newton ($N$)",
+      "The pound ($lb$)"
+    ],
+    explanation: "The kilogram is uniquely the only SI base unit with a multiplier prefix already attached to it."
+  },
+  {
+    title: "Chamber 11 — The Absolute Zero: Temperature",
+    lecture: `For temperature, physics rarely uses Fahrenheit or Celsius in deep equations, because they have arbitrary zero points (based on water freezing/boiling). Physics demands an absolute scale. The SI base unit for thermodynamic temperature is the <span class="hl">Kelvin ($K$)</span>. Zero Kelvin ($0$ $K$) is absolute zero—the point where all thermal motion theoretically stops. There are no negative numbers in Kelvin.`,
+    ytId: "TNUDBdv3jWI", 
+    question: "Why is the Kelvin ($K$) scale preferred over Celsius as the SI Base Unit for temperature in physics?",
+    correct: "It is an absolute scale starting at absolute zero, meaning it contains no arbitrary negative values.",
+    wrong: [
+      "It is exactly equal to the Celsius scale, just renamed to honor a famous physicist.",
+      "It aligns perfectly with the imperial system, preventing calculation errors like the Mars Orbiter disaster.",
+      "It is the only scale that can accurately measure the core temperature of a star."
+    ],
+    explanation: "Kelvin starts at absolute zero, meaning temperature is directly proportional to kinetic energy without weird negative offsets."
+  },
+  {
+    title: "Chamber 12 — Derived Units: Building Complexity",
+    lecture: `If a unit is not one of the seven base units, it is a <b>Derived Unit</b>. For example, velocity is a derived unit of length divided by time ($m/s$). Force is measured in Newtons ($N$). But what is a Newton? According to Newton's Second Law ($F = ma$), Force equals mass ($kg$) times acceleration ($m/s^2$). Therefore, $1$ Newton is exactly equal to $1$ <span class="hl">$kg \\cdot m/s^2$</span>.`,
+    ytId: "8s1c1camxDA", 
+    question: "The Newton ($N$) is a derived unit used to measure force. Which combination of SI base units constitutes one Newton?",
+    correct: "$kg \\cdot m/s^2$",
+    wrong: [
+      "$kg \\cdot m/s$",
+      "$m \\cdot s^2/kg$",
+      "$kg^2 \\cdot m/s$"
+    ],
+    explanation: "Force is mass times acceleration. Mass is $kg$, acceleration is $m/s^2$. Multiply them together."
+  },
+  {
+    title: "Chamber 13 — The Factor-Label Method",
+    lecture: `Unit conversion is arguably the most essential math skill in introductory physics. The safest approach is the <span class="hl">factor-label method</span> (dimensional analysis). You multiply your starting value by a conversion factor that equals $1$ (e.g., $1000$ $m$ / $1$ $km$). By setting it up as fractions, you can visually cancel out the units you don't want, leaving only the units you need.`,
+    ytId: "K33txxFsnrg", 
+    question: "When using the factor-label method to convert $5.0$ kilometers to meters, which mathematical operation correctly cancels the original unit?",
+    correct: "Multiply by the fraction ($1000$ $m$ / $1$ $km$)",
+    wrong: [
+      "Multiply by the fraction ($1$ $km$ / $1000$ $m$)",
+      "Add $1000$ $m$ for every $1$ $km$ present.",
+      "Divide by the fraction ($1000$ $m$ / $1$ $m$)"
+    ],
+    explanation: "To cancel $km$ (which is in the numerator), $km$ must be in the denominator of the multiplier fraction."
+  },
+  {
+    title: "Chamber 14 — Applied Conversion: Density",
+    lecture: `Let's increase the difficulty. Converting units with exponents requires you to apply the exponent to the conversion factor as well. For example, volume. If $1$ $m$ = $100$ $cm$, then $1$ $m^3$ does NOT equal $100$ $cm^3$. It equals $(100)^3$ $cm^3$, which is $1,000,000$ $cm^3$. Be extremely careful when dealing with areas and volumes.`,
+    ytId: "3pXYcTHIwqQ", 
+    question: "If the density of water is exactly $1.0$ $g/cm^3$, what is its density when converted to the standard SI units of $kg/m^3$?",
+    correct: "$1000$ $kg/m^3$",
+    wrong: [
+      "$1.0$ $kg/m^3$",
+      "$100$ $kg/m^3$",
+      "$10,000$ $kg/m^3$"
+    ],
+    explanation: "To convert $g \\rightarrow kg$ is $1/1000$. To convert $cm^3 \\rightarrow m^3$ in the denominator is $1/1,000,000$. ($1/1000$) / ($1/1000000$) = $1000$."
+  },
+  {
+    title: "Chamber 15 — Applied Conversion: Speed",
+    lecture: `A classic physics scenario involves converting speed limits. To convert kilometers per hour ($km/h$) to meters per second ($m/s$), you must chain two conversion factors together. First, deal with distance ($1$ $km = 1000$ $m$). Second, deal with time ($1$ hour = $60$ minutes = $3600$ seconds). Thus, you multiply by $1000$ and divide by $3600$.`,
+    ytId: "AnaRjRCAIfA", 
+    question: "A car is moving at exactly $10.0$ $m/s$. What is its speed converted to $km/h$?",
+    correct: "$36.0$ $km/h$",
+    wrong: [
+      "$3.6$ $km/h$",
+      "$100$ $km/h$",
+      "$360$ $km/h$"
+    ],
+    explanation: "$10.0$ $m/s \\times (3600$ $s / 1$ $hr) / (1000$ $m / 1$ $km) = 36.0$ $km/h$."
+  }
+];
+
+// ===== UI LOGIC & STATE =====
+const TOTAL = domainData.length;
+let current = -1;
+let score = 0;
+
+const container = document.getElementById('stage-container');
+const intro = document.getElementById('introStage');
+const shell = document.getElementById('progressShell');
+const fill = document.getElementById('progressFill');
+const hudSec = document.getElementById('hudSector');
+const hudScr = document.getElementById('hudScore');
+
+// Video Tracking state
+let currentVideoOpenTime = 0;
+let accumulatedVideoTime = 0;
+
+// YT Modal Logic
+const ytModal = document.getElementById('yt-modal');
+const ytIframe = document.getElementById('yt-iframe');
+const ytFallbackLink = document.getElementById('yt-fallback-link');
+const closeYt = document.getElementById('close-yt');
+
+closeYt.addEventListener('click', () => {
+  ytModal.style.display = 'none';
+  ytIframe.src = ""; 
+  
+  // Track video watch time to subtract from "read time"
+  if (currentVideoOpenTime > 0) {
+    accumulatedVideoTime += (Date.now() - currentVideoOpenTime);
+    currentVideoOpenTime = 0;
+  }
+  
+  const activeTrialBlock = container.querySelector('.trial-block');
+  const ytBtn = container.querySelector('.yt-btn');
+  if (activeTrialBlock) {
+    activeTrialBlock.style.display = 'block';
+    if(ytBtn) ytBtn.style.display = 'none';
+  }
+});
+
+function shuffleArray(array) {
+  let curId = array.length;
+  while (0 !== curId) {
+    let randId = Math.floor(Math.random() * curId);
+    curId -= 1;
+    let tmp = array[curId];
+    array[curId] = array[randId];
+    array[randId] = tmp;
+  }
+  return array;
+}
+
+function renderStage(index) {
+  const data = domainData[index];
+  
+  // Prep choices & maintain correct answer only in JS memory (Anti-Cheat)
+  let options = data.wrong.map(txt => ({ text: txt, isCorrect: false }));
+  options.push({ text: data.correct, isCorrect: true });
+  options = shuffleArray(options);
+  const letters = ['A', 'B', 'C', 'D'];
+
+  // Notice: 'data-correct' has been removed from the HTML string completely
+  let html = `
+    <div class="card stage active">
+      <div class="guide-head"><span class="chip" style="color:var(--accent-cyan); border-color:var(--accent-cyan);">Abyssal Guide</span></div>
+      <div class="lecture">
+        <h3>${data.title}</h3>
+        <p>${data.lecture}</p>
+      </div>
+      <div class="trial">
+        <div class="trial-tag">Trial ${index + 1}</div>
+        <button class="btn yt-btn" style="width:100%; margin-bottom:20px;">🔍 VIEW ARCHIVE FOOTAGE TO UNLOCK TRIAL</button>
+        
+        <div class="trial-block" style="display:none;">
+          <div class="trial-q">${data.question}</div>
+          <div class="choices">
+            ${options.map((opt, i) => `
+              <button class="choice" data-idx="${i}">
+                <span class="key">${letters[i]}</span>
+                <span class="text">${opt.text}</span>
+              </button>
+            `).join('')}
+          </div>
+          <div class="feedback"></div>
+          <div class="next-row"><button class="btn">PROCEED TO NEXT CHAMBER ▸</button></div>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  container.innerHTML = html;
+  
+  // Render KaTeX
+  renderMathInElement(container, { delimiters: [ {left: "$", right: "$", display: false} ] });
+
+  const ytBtn = container.querySelector('.yt-btn');
+  ytBtn.addEventListener('click', () => {
+    ytIframe.src = `https://www.youtube-nocookie.com/embed/${data.ytId}?rel=0`;
+    ytFallbackLink.href = `https://www.youtube.com/watch?v=${data.ytId}`;
+    ytModal.style.display = 'flex';
+    currentVideoOpenTime = Date.now(); // Start measuring video duration
+  });
+
+  const choices = container.querySelectorAll('.choice');
+  const feedback = container.querySelector('.feedback');
+  const nextBtn = container.querySelector('.next-row .btn');
+  const nextRow = container.querySelector('.next-row');
+  
+  let answered = false;
+
+  choices.forEach(btn => {
+    btn.addEventListener('click', function() {
+      if (answered) return;
+      answered = true;
+      
+      const optIdx = this.getAttribute('data-idx');
+      const isCorrect = options[optIdx].isCorrect;
+      
+      // Update styling based on internal JS state, not DOM attributes
+      choices.forEach(c => {
+        const cIdx = c.getAttribute('data-idx');
+        if(options[cIdx].isCorrect) c.classList.add('correct');
+        c.disabled = true;
+      });
+      
+      if (!isCorrect) this.classList.add('wrong');
+
+      _recordAnswer(index, isCorrect);
+
+      if (isCorrect) {
+        score++;
+        feedback.className = 'feedback show ok';
+        feedback.innerHTML = `<span class="fb-title">✔ CORRECT</span>${data.explanation}`;
+      } else {
+        feedback.className = 'feedback show no';
+        feedback.innerHTML = `<span class="fb-title">✘ INCORRECT</span>${data.explanation}`;
+      }
+      
+      renderMathInElement(feedback, { delimiters: [ {left: "$", right: "$", display: false} ] });
+      hudScr.textContent = score;
+      nextRow.classList.add('show');
+    });
+  });
+
+  nextBtn.addEventListener('click', () => {
+    _recordNext(index);
+    current++;
+    if (current >= TOTAL) {
+      finish();
+    } else {
+      updateHUD();
+      renderStage(current);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  });
+}
+
+function startQuest() {
+  intro.classList.remove('active');
+  setTimeout(() => intro.style.display = 'none', 600);
+  shell.style.display = 'block';
+  document.getElementById('main-wrap').style.minHeight = 'auto'; 
+  
+  _TR.startTime = Date.now();
+  _TR.currentSector = 0;
+  _TR.sectorStartTime = Date.now();
+  _TR.phase = 'reading';
+
+  current = 0;
+  updateHUD();
+  renderStage(0);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function updateHUD() {
+  hudSec.textContent = 'CHAMBER ' + (current + 1) + '/' + TOTAL;
+  fill.style.width = ((current) / TOTAL * 100) + '%';
+  hudScr.textContent = score;
+}
+
+function finish() {
+  shell.style.display = 'none';
+  container.innerHTML = '';
+  _TR.totalTime = Date.now() - _TR.startTime;
+  _TR.score = score;
+  document.getElementById('tracker-overlay').classList.add('show');
+  document.getElementById('tr-name-input').focus();
+}
+
+// ===== TRACKER LOGIC =====
+var _TR = {
+  startTime: null, sectorStartTime: null, currentSector: -1, sectorData: [],
+  tabSwitches: 0, copyPasteCount: 0, scrollJumps: 0,
+  lastScrollY: 0, lastScrollTime: Date.now(), idlePauses: 0,
+  lastActivityTime: Date.now(), idleTimer: null, phase: 'intro',
+};
+
+document.addEventListener('visibilitychange', () => { if (document.hidden) _TR.tabSwitches++; });
+['copy', 'paste', 'cut'].forEach(ev => document.addEventListener(ev, () => _TR.copyPasteCount++));
+
+function _touchActivity() {
+  _TR.lastActivityTime = Date.now();
+  clearTimeout(_TR.idleTimer);
+  _TR.idleTimer = setTimeout(() => { if (_TR.phase === 'reading') _TR.idlePauses++; }, 30000);
+}
+['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll'].forEach(ev => {
+  document.addEventListener(ev, _touchActivity, { passive: true });
+});
+
+document.addEventListener('scroll', () => {
+  var now = Date.now();
+  var dy = Math.abs(window.scrollY - _TR.lastScrollY);
+  var dt = now - _TR.lastScrollTime;
+  if (dy > 500 && dt < 400) _TR.scrollJumps++;
+  _TR.lastScrollY = window.scrollY;
+  _TR.lastScrollTime = now;
+}, { passive: true });
+
+function _recordAnswer(sec, isCorrect) {
+  var now = Date.now();
+  var rawReadTime = now - (_TR.sectorStartTime || now);
+  // Subtract video watch time so it doesn't penalize their reading pace
+  var adjustedReadTime = Math.max(0, rawReadTime - accumulatedVideoTime);
+  
+  if (!_TR.sectorData[sec]) {
+    _TR.sectorData[sec] = {
+      sector: sec + 1,
+      readTime: adjustedReadTime,
+      answerTime: now,
+      correct: isCorrect,
+    };
+  }
+  _TR.phase = 'answered';
+  accumulatedVideoTime = 0; // Reset video accumulator for next chamber
+}
+
+function _recordNext(sec) {
+  var now = Date.now();
+  var sd = _TR.sectorData[sec];
+  if (sd && !sd.continueTime) {
+    sd.continueTime = now;
+    sd.reviewTime = now - (sd.answerTime || now);
+  }
+  _TR.currentSector++;
+  _TR.sectorStartTime = Date.now();
+  _TR.phase = 'reading';
+}
+
+// SEAL RECORD BUTTON
+const _nameInput = document.getElementById('tr-name-input');
+const _submitBtn = document.getElementById('tr-submit');
+
+_nameInput.addEventListener('input', (e) => {
+  _submitBtn.disabled = e.target.value.trim().length === 0;
+});
+
+_nameInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !_submitBtn.disabled) {
+    _runAnalysis();
+  }
+});
+
+_submitBtn.addEventListener('click', () => {
+  if (!_submitBtn.disabled) _runAnalysis();
+});
+
+function _runAnalysis() {
+  var name = _nameInput.value.trim();
+  if (!name) return;
+  document.getElementById('name-phase').style.display = 'none';
+  document.getElementById('result-phase').style.display = 'block';
+  document.getElementById('tracker-overlay').scrollTo({top: 0, behavior: 'smooth'});
+  _renderResult(name, _analyzeNation(name));
+}
+
+// ===== ANALYSIS ENGINE =====
+function _analyzeNation(name) {
+  var t = _TR;
+  var totalSec = (t.totalTime || 1) / 1000;
+  var numSectors = 15;
+  var avgRead = t.sectorData.reduce((a, s) => a + (s ? s.readTime : 30000), 0) / numSectors / 1000;
+  var correct = t.score;
+  var wrong = numSectors - correct;
+  var tabs = t.tabSwitches;
+  var cpCount = t.copyPasteCount;
+  var jumps = t.scrollJumps;
+  var idles = t.idlePauses;
+
+  var speedScore = totalSec < 300 ? 1 : totalSec < 480 ? 2 : totalSec < 720 ? 3 : totalSec < 1000 ? 4 : totalSec < 1400 ? 5 : totalSec < 2000 ? 6 : 7;
+  var readFast = avgRead < 10;
+  var readSlow = avgRead > 60;
+  var outsideHelp = (tabs >= 3 || cpCount >= 2);
+  var focused = (tabs === 0 && cpCount === 0 && jumps <= 2);
+  var perfect = correct === 15;
+  var good = correct >= 12;
+  var average = correct >= 8;
+  var poor = correct < 8;
+
+  var sc = { Mondstadt:0, Liyue:0, Inazuma:0, Sumeru:0, Fontaine:0, Natlan:0, Snezhnaya:0, NodKrai:0 };
+
+  if (speedScore <= 3) sc.Mondstadt += 3;
+  if (average) sc.Mondstadt += 2;
+  if (!outsideHelp && !readFast) sc.Mondstadt += 1;
+
+  if (speedScore >= 5) sc.Liyue += 3;
+  if (readSlow) sc.Liyue += 2;
+  if (good || perfect) sc.Liyue += 3;
+  if (focused) sc.Liyue += 2;
+
+  if (focused) sc.Inazuma += 4;
+  if (perfect || good) sc.Inazuma += 3;
+  if (tabs === 0 && cpCount === 0) sc.Inazuma += 2;
+
+  if (speedScore <= 2 && (good || perfect)) sc.Sumeru += 5;
+  if (outsideHelp && (good || perfect)) sc.Sumeru += 4;
+  if (readFast && perfect) sc.Sumeru += 3;
+
+  if (tabs >= 2) sc.Fontaine += 4;
+  if (average || good) sc.Fontaine += 1;
+  if (idles >= 1) sc.Fontaine += 2;
+
+  if (speedScore <= 3) sc.Natlan += 2;
+  if (jumps >= 4) sc.Natlan += 3;
+  if (wrong >= 4) sc.Natlan += 2;
+
+  if (speedScore === 4 || speedScore === 5) sc.Snezhnaya += 3;
+  if (tabs <= 1 && cpCount === 0) sc.Snezhnaya += 2;
+  if (good || perfect) sc.Snezhnaya += 2;
+
+  if (idles >= 2) sc.NodKrai += 4;
+  if (poor) sc.NodKrai += 4;
+  if (speedScore >= 6 && poor) sc.NodKrai += 2;
+
+  var best = Object.keys(sc).reduce((a, b) => sc[a] >= sc[b] ? a : b);
+  return { nation: best, stats: { totalSec, avgRead, correct, tabs, cpCount, jumps, idles, outsideHelp, perfect, good, average, poor } };
+}
+
+// ===== LORE & IMAGES =====
+var _NATIONS = {
+  Mondstadt: { 
+    emoji: '🌬️', element: 'Anemo', color: '#7ed6f5', 
+    image: 'https://static0.fextralifeimages.com/file/genshinimpact/5/5d/Anemo-element-genshin-impact-wiki-guide.png', 
+    desc: (s, name) => [
+      `Like the Anemo Archon Barbatos guiding a glider through a storm, ${name}'s pacing was breezy, instinctual, and wonderfully unburdened by overthinking. The data shows a smooth traversal through the Abyss with a relaxed confidence.`,
+      "The City of Freedom values intuition over rigid, exhausting calculation. You navigated the harsh constraints of physics with a free spirit, skipping the tedious hesitation that plagues lesser scholars, and letting the winds of probability carry you. A true Outrider of the physical laws."
+    ]
+  },
+  Liyue: { 
+    emoji: '⚖️', element: 'Geo', color: '#ffc94d', 
+    image: 'https://static0.fextralifeimages.com/file/genshinimpact/5/51/Geo-element-genshin-impact-wiki-guide.png',
+    desc: (s, name) => [
+      `Deliberate, unyielding, and meticulous. The Archives indicate that ${name} assessed every chamber of the Abyss with the careful eye of an appraiser determining the worth of Cor Lapis. No sudden movements, just steady, calculated progression.`,
+      "Liyue Harbor is built on contracts and solid stone under the watchful eye of Rex Lapis. You did not rush; you absorbed the fundamental laws of reality, ensuring your mathematical foundation was completely unshakable before striking your final answer."
+    ]
+  },
+  Inazuma: { 
+    emoji: '⚡', element: 'Electro', color: '#c39dff', 
+    image: 'https://static0.fextralifeimages.com/file/genshinimpact/5/53/Electro-element-genshin-impact-wiki-guide.png',
+    desc: (s, name) => [
+      `Striking with the focus of a drawn blade. ${name} cleared the domain with zero distractions, maintaining a pacing that was sharp, intensely efficient, and lethal to error. The records show almost no straying from the path.`,
+      "Inazuma reveres eternity through perfection. You shut out the noise of the outside world, maintaining an ironclad discipline and unwavering resolve that the Almighty Raiden Shogun herself would commend."
+    ]
+  },
+  Sumeru: { 
+    emoji: '🌿', element: 'Dendro', color: '#3ddc84', 
+    image: 'https://static0.fextralifeimages.com/file/genshinimpact/1/18/Dendro-element-genshin-impact-wiki-guide.png', 
+    desc: (s, name) => {
+      let text = s.outsideHelp 
+        ? "Your tactical departures from the trial suggest you brilliantly interfaced with the Akasha—or external archives—to verify the truth." 
+        : "Your blistering pace implies a devastatingly sharp intellect, slicing through complex logic before the ink was even dry.";
+      return [
+        `Wisdom is a weapon, and ${name} wields it effortlessly. You deciphered the mechanisms of reality with terrifying speed. ${text}`,
+        "Sumeru, the Nation of Wisdom overseen by Lesser Lord Kusanali, holds that knowledge is paramount above all else. Whether born of natural brilliance or scholarly resourcefulness, your ability to extract correct universal laws is undeniable."
+      ];
+    }
+  },
+  Fontaine: { 
+    emoji: '💧', element: 'Hydro', color: '#5bb8ff', 
+    image: 'https://static0.fextralifeimages.com/file/genshinimpact/d/db/Hydro-element-genshin-impact-wiki-guide.png', 
+    desc: (s, name) => [
+      `Every trial is a stage, and ${name} played their part with dramatic flair. The telemetry shows pauses for suspense, theatrical departures, and sudden flashes of insight that characterized this entire Abyssal run.`,
+      "In the Nation of Hydro, overseen by the Iudex Neuvillette, spectacle is just as important as the final verdict. You didn't merely solve the laws of physics—you performed them, turning a rigid examination into a chaotic masterpiece worthy of the Opera Epiclese."
+    ]
+  },
+  Natlan: { 
+    emoji: '🔥', element: 'Pyro', color: '#ff8c42', 
+    image: 'https://static0.fextralifeimages.com/file/genshinimpact/2/2c/Pyro-element-genshin-impact-wiki-guide.png', 
+    desc: (s, name) => [
+      `Bold, impulsive, and burning with momentum. ${name} charged into the trials before the dust settled, choosing swift action over careful deliberation. The pacing was aggressive, leaving little room for second-guessing.`,
+      "Natlan is forged in the fires of war and raw instinct. You proved that sometimes, survival in the Night Kingdom requires leaping first and recalibrating the math later. The Pyro Archon favors the brave over the cautious."
+    ]
+  },
+  Snezhnaya: { 
+    emoji: '❄️', element: 'Cryo', color: '#a0d4ff', 
+    image: 'https://static0.fextralifeimages.com/file/genshinimpact/f/fc/Cryo-element-genshin-impact-wiki-guide.png', 
+    desc: (s, name) => [
+      `Clinical, calculating, and coldly efficient. ${name} treated the fundamental laws of the universe as mission objectives—assessed, executed, and completed without wasted motion or unnecessary hesitation.`,
+      "Snezhnaya demands absolute order and results. In the dark of the Abyss, you brought a chilling competence that left no room for sentimentality or doubt. The Tsaritsa and her Harbingers respect nothing but flawless execution."
+    ]
+  },
+  NodKrai: { 
+    emoji: '🌨️', element: 'Abyssal Frost', color: '#8b9bb4', 
+    image: 'https://static.wikia.nocookie.net/gensin-impact/images/3/37/Talent_Law_of_the_New_Moon.png/revision/latest?cb=20260115185658',
+    desc: (s, name) => [
+      `Lost in the blinding snow of complex variables, ${name}'s traversal was marked by hesitation and wandering. The fundamental truths proved elusive in the dark, leading to a journey defined by stillness and fragmented focus.`,
+      "Nod'Krai represents the frozen edge of the map, echoing the lost realm of Khaenri'ah where travelers often lose their way. Yet, surviving the storm and arriving at the end—regardless of the final score—is its own form of abyssal victory."
+    ]
+  }
+};
+
+// ===== RENDER & IMAGE EXPORT =====
+function _renderResult(name, analysis) {
+  var n = analysis.nation;
+  var info = _NATIONS[n];
+  var s = analysis.stats;
+  var paras = info.desc(s, name);
+  var col = info.color;
+
+  document.documentElement.style.setProperty('--nation-tint', col);
+
+  var minsTotal = Math.floor(s.totalSec / 60);
+  var secsTotal = Math.round(s.totalSec % 60);
+  var avgStr = s.avgRead >= 60 ? Math.floor(s.avgRead/60) + 'm ' + Math.round(s.avgRead%60) + 's' : Math.round(s.avgRead) + 's';
+  
+  var scoreClass = s.correct >= 12 ? 'color: var(--accent-green)' : s.correct >= 8 ? 'color: var(--border-gold)' : 'color: var(--accent-red)';
+  var displayNation = n === 'NodKrai' ? "Nod'Krai" : n;
+  
+  var sigilHTML = info.image 
+      ? `<img class="tr-nation-img" src="${info.image}" alt="${displayNation}">`
+      : `<span class="tr-sigil" style="color: ${col}">${info.emoji}</span>`;
+
+  var html = `
+    <div class="tr-traveler">Abyssal Record Verified</div>
+    <div class="tr-name-display">${_esc(name)}</div>
+    <div class="tr-verdict">By observing your navigation of the physical laws,<br>the land of Teyvat resonates to you with the element of</div>
+    <span class="tr-nation-name" style="color: ${col}">${_esc(displayNation)}</span>
+    
+    <div class="tr-sigil-container">${sigilHTML}</div>
+    <span class="tr-element" style="color: ${col}">${info.element}</span>
+    
+    <div class="tr-stats">
+      <div class="tr-stat"><span class="sv" style="color: ${col}">${minsTotal}m ${secsTotal}s</span><span class="sl">Clear Time</span></div>
+      <div class="tr-stat"><span class="sv" style="${scoreClass}">${s.correct} / 15</span><span class="sl">Stars Collected</span></div>
+      <div class="tr-stat"><span class="sv" style="color: var(--accent-cyan)">${avgStr}</span><span class="sl">Avg Read Pace</span></div>
+      <div class="tr-stat"><span class="sv" style="color: ${s.tabs > 0 ? 'var(--border-gold)' : 'var(--accent-green)'}">${s.tabs}</span><span class="sl">Focus Breaks</span></div>
+    </div>
+    
+    <div class="tr-lore-card">
+      <span class="tr-section-label" style="color: ${col}">Archivist's Reading</span>
+      ${paras.map(p => `<p>${_esc(p)}</p>`).join('')}
+    </div>
+  `;
+
+  document.getElementById('result-content').innerHTML = html;
+}
+
+function saveResultImage() {
+  const target = document.getElementById('result-content');
+  html2canvas(target, {
+    backgroundColor: '#0a0e1c',
+    scale: 2,
+    logging: false
+  }).then(canvas => {
+    let link = document.createElement('a');
+    link.download = 'abyssal_physics_record.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  });
+}
+
+function _esc(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
