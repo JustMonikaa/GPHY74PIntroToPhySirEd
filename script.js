@@ -6,7 +6,7 @@ document.addEventListener('keydown', event => {
   }
 });
 
-// Disable Copy/Cut/Paste Actions Globally
+// Disable Copy/Cut/Paste Actions Globally (Tracks penalties unless watching video)
 ['copy', 'cut', 'paste'].forEach(ev => {
   document.addEventListener(ev, (e) => {
     e.preventDefault();
@@ -495,7 +495,13 @@ function _runAnalysis() {
   document.getElementById('name-phase').style.display = 'none';
   document.getElementById('result-phase').style.display = 'block';
   document.getElementById('tracker-overlay').scrollTo({top: 0, behavior: 'smooth'});
-  _renderResult(name, _analyzeNation(name));
+  
+  // Track Attempts in Local Storage
+  let attempts = parseInt(localStorage.getItem('physics_domain_attempts') || '0', 10);
+  attempts++;
+  localStorage.setItem('physics_domain_attempts', attempts);
+  
+  _renderResult(name, _analyzeNation(name), attempts);
 }
 
 // ===== ANALYSIS ENGINE =====
@@ -563,7 +569,7 @@ function _analyzeNation(name) {
 // ===== LORE & IMAGES =====
 var _NATIONS = {
   Mondstadt: { 
-    emoji: '🌬️', element: 'Anemo', color: '#7ed6f5', 
+    emoji: '🌬️️', element: 'Anemo', color: '#7ed6f5', 
     image: 'https://static0.fextralifeimages.com/file/genshinimpact/5/5d/Anemo-element-genshin-impact-wiki-guide.png', 
     desc: (s, name) => [
       `Like the Anemo Archon Barbatos guiding a glider through a storm, ${name}'s pacing through this asynchronous module was breezy and wonderfully unburdened by overthinking. The data shows a smooth, relaxed traversal through the introductory concepts.`,
@@ -571,7 +577,7 @@ var _NATIONS = {
     ]
   },
   Liyue: { 
-    emoji: '⚖️️', element: 'Geo', color: '#ffc94d', 
+    emoji: '⚖', element: 'Geo', color: '#ffc94d', 
     image: 'https://static0.fextralifeimages.com/file/genshinimpact/5/51/Geo-element-genshin-impact-wiki-guide.png',
     desc: (s, name) => [
       `Deliberate, unyielding, and meticulous. The Archives indicate that ${name} assessed every part of this asynchronous module with the careful eye of an appraiser determining the worth of Cor Lapis. No sudden movements, just steady, calculated learning.`,
@@ -634,13 +640,18 @@ var _NATIONS = {
 };
 
 // ===== RENDER & IMAGE EXPORT =====
-function _renderResult(name, analysis) {
+function _renderResult(name, analysis, attempts) {
   var n = analysis.nation;
   var info = _NATIONS[n];
   var s = analysis.stats;
   var paras = info.desc(s, name);
   var col = info.color;
 
+  // Play Background Music
+  const bgm = document.getElementById('nation-bgm');
+  if (bgm) bgm.play().catch(e => console.log('Audio autoplay prevented by browser.'));
+
+  // Update Nation Glow
   document.documentElement.style.setProperty('--nation-tint', col);
 
   var minsTotal = Math.floor(s.totalSec / 60);
@@ -654,25 +665,41 @@ function _renderResult(name, analysis) {
       ? `<img class="tr-nation-img" src="${info.image}" alt="${displayNation}">`
       : `<span class="tr-sigil" style="color: ${col}">${info.emoji}</span>`;
 
+  // Inject Screenshot HTML with specific container for HTML2Canvas to capture stars
   var html = `
-    <div class="tr-traveler">Abyssal Record Verified</div>
-    <div class="tr-name-display">${_esc(name)}</div>
-    <div class="tr-verdict">By observing your navigation of the physical laws,<br>the land of Teyvat resonates to you with the element of</div>
-    <span class="tr-nation-name" style="color: ${col}">${_esc(displayNation)}</span>
-    
-    <div class="tr-sigil-container">${sigilHTML}</div>
-    <span class="tr-element" style="color: ${col}">${info.element}</span>
-    
-    <div class="tr-stats">
-      <div class="tr-stat"><span class="sv" style="color: ${col}">${minsTotal}m ${secsTotal}s</span><span class="sl">Clear Time</span></div>
-      <div class="tr-stat"><span class="sv" style="${scoreClass}">${s.correct} / 15</span><span class="sl">Stars Collected</span></div>
-      <div class="tr-stat"><span class="sv" style="color: var(--accent-cyan)">${avgStr}</span><span class="sl">Avg Read Pace</span></div>
-      <div class="tr-stat"><span class="sv" style="color: ${s.tabs > 0 ? 'var(--border-gold)' : 'var(--accent-green)'}">${s.tabs}</span><span class="sl">Focus Breaks</span></div>
-    </div>
-    
-    <div class="tr-lore-card">
-      <span class="tr-section-label" style="color: ${col}">Archivist's Reading</span>
-      ${paras.map(p => `<p>${_esc(p)}</p>`).join('')}
+    <div id="screenshot-container" style="position: relative; overflow: hidden; background-color: var(--bg-base); border: 1px solid var(--border-glow); border-radius: 12px; padding: 40px; margin-bottom: 24px;">
+      
+      <!-- Centralized Elemental Glow -->
+      <div style="position: absolute; inset: 0; background: radial-gradient(circle at 50% 30%, var(--nation-tint) 0%, transparent 65%); opacity: 0.75; z-index: 1;"></div>
+      
+      <!-- Captured Stars -->
+      <div class="stars"></div><div class="stars stars2"></div>
+      
+      <!-- Attempt Stamp -->
+      <div class="attempt-stamp">Attempt: #${attempts}</div>
+
+      <!-- Main Result Content -->
+      <div class="rc-inner">
+        <div class="tr-traveler">Abyssal Record Verified</div>
+        <div class="tr-name-display">${_esc(name)}</div>
+        <div class="tr-verdict">By observing your navigation of the physical laws,<br>the land of Teyvat resonates to you with the element of</div>
+        <span class="tr-nation-name" style="color: ${col}">${_esc(displayNation)}</span>
+        
+        <div class="tr-sigil-container">${sigilHTML}</div>
+        <span class="tr-element" style="color: ${col}">${info.element}</span>
+        
+        <div class="tr-stats">
+          <div class="tr-stat"><span class="sv" style="color: ${col}">${minsTotal}m ${secsTotal}s</span><span class="sl">Clear Time</span></div>
+          <div class="tr-stat"><span class="sv" style="${scoreClass}">${s.correct} / 15</span><span class="sl">Stars Collected</span></div>
+          <div class="tr-stat"><span class="sv" style="color: var(--accent-cyan)">${avgStr}</span><span class="sl">Avg Read Pace</span></div>
+          <div class="tr-stat"><span class="sv" style="color: ${s.tabs > 0 ? 'var(--border-gold)' : 'var(--accent-green)'}">${s.tabs}</span><span class="sl">Focus Breaks</span></div>
+        </div>
+        
+        <div class="tr-lore-card">
+          <span class="tr-section-label" style="color: ${col}">Archivist's Reading</span>
+          ${paras.map(p => `<p>${_esc(p)}</p>`).join('')}
+        </div>
+      </div>
     </div>
   `;
 
@@ -680,10 +707,12 @@ function _renderResult(name, analysis) {
 }
 
 function saveResultImage() {
-  const target = document.getElementById('result-content');
+  const target = document.getElementById('screenshot-container');
   html2canvas(target, {
     backgroundColor: '#0a0e1c',
     scale: 2,
+    useCORS: true,
+    allowTaint: true,
     logging: false
   }).then(canvas => {
     let link = document.createElement('a');
