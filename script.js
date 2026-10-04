@@ -226,7 +226,6 @@ const hudSec = document.getElementById('hudSector');
 const hudScr = document.getElementById('hudScore');
 
 // Video Tracking state
-let currentVideoOpenTime = 0;
 let accumulatedVideoTime = 0;
 
 // ===== YT MODAL LOGIC =====
@@ -239,13 +238,14 @@ closeYt.addEventListener('click', () => {
   ytModal.style.display = 'none';
   ytIframe.src = ""; 
   
-  // Track video watch time to subtract from "read time"
-  if (currentVideoOpenTime > 0) {
-    accumulatedVideoTime += (Date.now() - currentVideoOpenTime);
-    currentVideoOpenTime = 0;
+  if (_TR.currentVideoOpenTime > 0) {
+    let watchTime = Date.now() - _TR.currentVideoOpenTime;
+    _TR.currentVideoWatchTime = (_TR.currentVideoWatchTime || 0) + watchTime;
+    accumulatedVideoTime += watchTime; 
+    _TR.currentVideoOpenTime = 0;
   }
   
-  // Resume strict tracking once the video is closed
+  _TR.lastVideoCloseTime = Date.now();
   _TR.phase = 'reading'; 
   _touchActivity(); 
   
@@ -308,7 +308,6 @@ function renderStage(index) {
   
   container.innerHTML = html;
   
-  // Render KaTeX for questions/lecture
   renderMathInElement(container, { delimiters: [ {left: "$", right: "$", display: false} ] });
 
   const ytBtn = container.querySelector('.yt-btn');
@@ -317,8 +316,10 @@ function renderStage(index) {
     ytFallbackLink.href = `https://www.youtube.com/watch?v=${data.ytId}`;
     ytModal.style.display = 'flex';
     
-    // START SAFE ZONE: Pause tracking penalties while watching
-    currentVideoOpenTime = Date.now();
+    if (_TR.currentVideoClickDelay === -1) {
+      _TR.currentVideoClickDelay = Date.now() - _TR.sectorStartTime;
+    }
+    _TR.currentVideoOpenTime = Date.now();
     _TR.phase = 'watching'; 
   });
 
@@ -413,6 +414,7 @@ var _TR = {
   tabSwitches: 0, copyPasteCount: 0, scrollJumps: 0,
   lastScrollY: 0, lastScrollTime: Date.now(), idlePauses: 0,
   lastActivityTime: Date.now(), idleTimer: null, phase: 'intro',
+  currentVideoOpenTime: 0, currentVideoWatchTime: 0, currentVideoClickDelay: -1, lastVideoCloseTime: 0
 };
 
 // Only penalize tab switches if they aren't safely watching a video
@@ -446,16 +448,23 @@ function _recordAnswer(sec, isCorrect) {
   var now = Date.now();
   var rawReadTime = now - (_TR.sectorStartTime || now);
   var adjustedReadTime = Math.max(0, rawReadTime - accumulatedVideoTime);
+  var ansDelay = _TR.lastVideoCloseTime ? (now - _TR.lastVideoCloseTime) : rawReadTime;
   
   if (!_TR.sectorData[sec]) {
     _TR.sectorData[sec] = {
       sector: sec + 1,
       readTime: adjustedReadTime,
+      watchTime: _TR.currentVideoWatchTime,
+      clickDelay: _TR.currentVideoClickDelay,
+      ansDelay: ansDelay,
       answerTime: now,
       correct: isCorrect,
     };
   }
   _TR.phase = 'answered';
+  _TR.currentVideoWatchTime = 0;
+  _TR.currentVideoClickDelay = -1;
+  _TR.lastVideoCloseTime = 0;
   accumulatedVideoTime = 0; 
 }
 
@@ -496,7 +505,6 @@ function _runAnalysis() {
   document.getElementById('result-phase').style.display = 'block';
   document.getElementById('tracker-overlay').scrollTo({top: 0, behavior: 'smooth'});
   
-  // Track Attempts in Local Storage
   let attempts = parseInt(localStorage.getItem('physics_domain_attempts') || '0', 10);
   attempts++;
   localStorage.setItem('physics_domain_attempts', attempts);
@@ -509,132 +517,121 @@ function _analyzeNation(name) {
   var t = _TR;
   var totalSec = (t.totalTime || 1) / 1000;
   var numSectors = 15;
-  var avgRead = t.sectorData.reduce((a, s) => a + (s ? s.readTime : 30000), 0) / numSectors / 1000;
   var correct = t.score;
-  var wrong = numSectors - correct;
   var tabs = t.tabSwitches;
   var cpCount = t.copyPasteCount;
-  var jumps = t.scrollJumps;
   var idles = t.idlePauses;
 
-  var speedScore = totalSec < 300 ? 1 : totalSec < 480 ? 2 : totalSec < 720 ? 3 : totalSec < 1000 ? 4 : totalSec < 1400 ? 5 : totalSec < 2000 ? 6 : 7;
-  var readFast = avgRead < 10;
-  var readSlow = avgRead > 60;
-  var outsideHelp = (tabs >= 3 || cpCount >= 2);
-  var focused = (tabs === 0 && cpCount === 0 && jumps <= 2);
-  var perfect = correct === 15;
-  var good = correct >= 12;
-  var average = correct >= 8;
-  var poor = correct < 8;
+  var validSectors = t.sectorData.filter(s => s != null);
+  var avgRead = validSectors.reduce((a, s) => a + (s.readTime || 30000), 0) / numSectors / 1000;
+  var avgWatch = validSectors.reduce((a, s) => a + (s.watchTime || 0), 0) / numSectors;
+  var avgAnsDelay = validSectors.reduce((a, s) => a + (s.ansDelay || 0), 0) / numSectors;
+  var avgClickDelay = validSectors.reduce((a, s) => a + (s.clickDelay > -1 ? s.clickDelay : 10000), 0) / numSectors;
+
+  var isCheater = (tabs >= 3 || cpCount >= 2 || (tabs >= 2 && avgAnsDelay < 3000));
+  var isImpulsive = (avgWatch < 15000 && correct < 10);
+  var isMethodical = (avgWatch > 45000 && avgAnsDelay > 10000);
+  var isFocused = (tabs === 0 && cpCount === 0);
+  var isPerfect = (correct === 15);
+  var isFast = (totalSec < 600); 
 
   var sc = { Mondstadt:0, Liyue:0, Inazuma:0, Sumeru:0, Fontaine:0, Natlan:0, Snezhnaya:0, NodKrai:0 };
 
-  if (speedScore <= 3) sc.Mondstadt += 3;
-  if (average) sc.Mondstadt += 2;
-  if (!outsideHelp && !readFast) sc.Mondstadt += 1;
+  if (isCheater) {
+      sc.Fontaine += 100;
+  } else if (isImpulsive) {
+      sc.Natlan += 50;
+  } else if (isPerfect && isFocused && avgWatch > 20000) {
+      sc.Snezhnaya += 50;
+  } else if (isMethodical && correct >= 12) {
+      sc.Liyue += 50;
+  } else if (isFocused && correct >= 10 && !isMethodical) {
+      sc.Inazuma += 50;
+  } else if (isFast && correct >= 12) {
+      sc.Sumeru += 50;
+  } else if (correct < 7 && avgWatch < 20000) {
+      sc.NodKrai += 50;
+  } else {
+      sc.Mondstadt += 50;
+  }
 
-  if (speedScore >= 5) sc.Liyue += 3;
-  if (readSlow) sc.Liyue += 2;
-  if (good || perfect) sc.Liyue += 3;
-  if (focused) sc.Liyue += 2;
-
-  if (focused) sc.Inazuma += 4;
-  if (perfect || good) sc.Inazuma += 3;
-  if (tabs === 0 && cpCount === 0) sc.Inazuma += 2;
-
-  if (speedScore <= 2 && (good || perfect)) sc.Sumeru += 5;
-  if (outsideHelp && (good || perfect)) sc.Sumeru += 4;
-  if (readFast && perfect) sc.Sumeru += 3;
-
-  if (tabs >= 2) sc.Fontaine += 4;
-  if (average || good) sc.Fontaine += 1;
-  if (idles >= 1) sc.Fontaine += 2;
-
-  if (speedScore <= 3) sc.Natlan += 2;
-  if (jumps >= 4) sc.Natlan += 3;
-  if (wrong >= 4) sc.Natlan += 2;
-
-  if (speedScore === 4 || speedScore === 5) sc.Snezhnaya += 3;
-  if (tabs <= 1 && cpCount === 0) sc.Snezhnaya += 2;
-  if (good || perfect) sc.Snezhnaya += 2;
-
-  if (idles >= 2) sc.NodKrai += 4;
-  if (poor) sc.NodKrai += 4;
-  if (speedScore >= 6 && poor) sc.NodKrai += 2;
+  sc.Mondstadt += (totalSec < 900 ? 5 : 0);
+  sc.Liyue += (avgAnsDelay > 15000 ? 10 : 0);
+  sc.Inazuma += (tabs === 0 ? 10 : 0);
+  sc.Sumeru += (avgClickDelay < 5000 && correct >= 12 ? 10 : 0);
+  sc.Fontaine += (tabs * 5) + (cpCount * 10);
+  sc.Natlan += (totalSec < 500 && correct < 10 ? 15 : 0);
+  sc.Snezhnaya += (correct === 15 ? 10 : 0);
+  sc.NodKrai += (idles > 3 ? 10 : 0);
 
   var best = Object.keys(sc).reduce((a, b) => sc[a] >= sc[b] ? a : b);
-  return { nation: best, stats: { totalSec, avgRead, correct, tabs, cpCount, jumps, idles, outsideHelp, perfect, good, average, poor } };
+  return { nation: best, stats: { totalSec, avgRead, correct, tabs, cpCount, idles, avgWatch, avgAnsDelay } };
 }
 
 // ===== LORE & IMAGES =====
 var _NATIONS = {
   Mondstadt: { 
-    emoji: '🌬️️', element: 'Anemo', color: '#7ed6f5', 
+    emoji: '🌬', element: 'Anemo', color: '#7ed6f5', 
     image: 'https://static0.fextralifeimages.com/file/genshinimpact/5/5d/Anemo-element-genshin-impact-wiki-guide.png', 
     desc: (s, name) => [
-      `Like the Anemo Archon Barbatos guiding a glider through a storm, ${name}'s pacing through this asynchronous module was breezy and wonderfully unburdened by overthinking. The data shows a smooth, relaxed traversal through the introductory concepts.`,
-      "The City of Freedom values intuition over exhausting calculation. You navigated these foundational physics constraints with a free spirit, skipping tedious hesitation and letting your natural curiosity carry you. A true Outrider of the physical laws."
+      `Like a glider riding the wind, you moved through the modules at a brisk and unburdened pace. The logs show a smooth journey free from overthinking.`,
+      `You allowed your natural curiosity to guide you rather than getting bogged down in the heavy details. May the Anemo Archon always guide your free-spirited path.`
     ]
   },
   Liyue: { 
     emoji: '⚖', element: 'Geo', color: '#ffc94d', 
     image: 'https://static0.fextralifeimages.com/file/genshinimpact/5/51/Geo-element-genshin-impact-wiki-guide.png',
     desc: (s, name) => [
-      `Deliberate, unyielding, and meticulous. The Archives indicate that ${name} assessed every part of this asynchronous module with the careful eye of an appraiser determining the worth of Cor Lapis. No sudden movements, just steady, calculated learning.`,
-      "Liyue Harbor is built on solid stone under the watchful eye of Rex Lapis. You did not rush this assignment; you absorbed the fundamental laws of reality, ensuring your mathematical foundation was completely unshakable before locking in your final answers."
+      `Methodical, grounded, and rock solid. The data indicates you reviewed the material with the careful scrutiny of a master appraiser evaluating rare jade.`,
+      `You took your time, ensuring your foundation was completely unshakable before proceeding. The Lord of Geo respects those who honor the contract of thorough learning.`
     ]
   },
   Inazuma: { 
     emoji: '⚡', element: 'Electro', color: '#c39dff', 
     image: 'https://static0.fextralifeimages.com/file/genshinimpact/5/53/Electro-element-genshin-impact-wiki-guide.png',
     desc: (s, name) => [
-      `Striking with the focus of a drawn blade. ${name} cleared this self-paced module with zero distractions, maintaining a pacing that was sharp, intensely efficient, and lethal to error. The records show almost no straying from the active tab.`,
-      "Inazuma reveres eternity through perfection. You shut out the noise of the outside world to focus on this introductory lecture, maintaining an ironclad discipline and unwavering resolve that the Almighty Raiden Shogun herself would commend."
+      `You struck through these trials with the focused intensity of a drawn blade. Zero distractions, minimal hesitation, and a sharply efficient pace defined your session.`,
+      `You closed off the outside world to achieve a state of absolute concentration. The Raiden Shogun would commend your pursuit of eternity through unwavering discipline.`
     ]
   },
   Sumeru: { 
     emoji: '🌿', element: 'Dendro', color: '#3ddc84', 
     image: 'https://static0.fextralifeimages.com/file/genshinimpact/1/18/Dendro-element-genshin-impact-wiki-guide.png', 
-    desc: (s, name) => {
-      let text = s.outsideHelp 
-        ? "Your tactical tab-switches and departures from the trial suggest you brilliantly interfaced with the Akasha—or external archives—to verify the truth during your study session." 
-        : "Your blistering pace implies a devastatingly sharp intellect, slicing through complex logic before the ink on the lecture was even dry.";
-      return [
-        `Wisdom is a weapon, and ${name} wields it effortlessly. You deciphered the introductory mechanics of reality with terrifying speed. ${text}`,
-        "Sumeru, the Nation of Wisdom, holds that knowledge is paramount above all else. Whether born of natural brilliance or highly resourceful study habits during this async task, your ability to extract correct universal laws is undeniable."
-      ];
-    }
+    desc: (s, name) => [
+      `Your mastery of the material suggests a brilliant connection to the Akasha. Whether you possessed innate genius or cleverly referenced external archives, you synthesized the correct answers with terrifying speed.`,
+      `The God of Wisdom knows that true intellect is about finding the right answers by any means necessary.`
+    ]
   },
   Fontaine: { 
     emoji: '💧', element: 'Hydro', color: '#5bb8ff', 
     image: 'https://static0.fextralifeimages.com/file/genshinimpact/d/db/Hydro-element-genshin-impact-wiki-guide.png', 
     desc: (s, name) => [
-      `Every lecture is a stage, and ${name} played their part with dramatic flair. The telemetry for your asynchronous session shows pauses for suspense, theatrical tab switches, and sudden flashes of insight that characterized this entire run.`,
-      "In the Nation of Hydro, spectacle is just as important as the final verdict. You didn't merely complete a physics assignment—you performed it, turning a self-paced quiz into a chaotic masterpiece worthy of the Opera Epiclese."
+      `A spectacle from start to finish. The telemetry highlights your dramatic pauses, theatrical window switching, and highly suspicious pacing.`,
+      `The Oratrice Mecanique d'Analyse Cardinale has weighed your chaotic methods and deemed you guilty of attempting to manipulate the laws of physics. The Hydro Archon watches your performance with great amusement.`
     ]
   },
   Natlan: { 
     emoji: '🔥', element: 'Pyro', color: '#ff8c42', 
     image: 'https://static0.fextralifeimages.com/file/genshinimpact/2/2c/Pyro-element-genshin-impact-wiki-guide.png', 
     desc: (s, name) => [
-      `Bold, impulsive, and burning with momentum. ${name} charged into the async trials before the dust settled, choosing swift action over careful deliberation. The pacing was aggressive, leaving little room for second-guessing the foundational concepts.`,
-      "Natlan is forged in the fires of war and raw instinct. You proved that sometimes, surviving an introductory physics assignment requires leaping first and recalibrating the math later. The Pyro Archon favors the brave over the cautious."
+      `Bold, impulsive, and burning with sheer momentum. You charged ahead before the dust even settled, choosing swift action over careful deliberation.`,
+      `This aggressive pacing left little room for second thoughts. The Pyro Archon favors the brave who leap into the fire without looking back.`
     ]
   },
   Snezhnaya: { 
     emoji: '❄️', element: 'Cryo', color: '#a0d4ff', 
     image: 'https://static0.fextralifeimages.com/file/genshinimpact/f/fc/Cryo-element-genshin-impact-wiki-guide.png', 
     desc: (s, name) => [
-      `Clinical, calculating, and coldly efficient. ${name} treated this foundational physics assignment as a strict mission objective—assessed, executed, and completed without wasted motion or unnecessary hesitation.`,
-      "Snezhnaya demands absolute order and results. Even in an unmonitored asynchronous setup, you brought a chilling competence that left no room for sentimentality or doubt. The Tsaritsa and her Harbingers respect nothing but flawless execution."
+      `Clinical, calculating, and coldly efficient. You treated this assignment as a strict objective to be executed flawlessly.`,
+      `Every click was deliberate, yielding high marks with zero wasted motion or unnecessary sentimentality. The Tsaritsa demands absolute perfection, and you delivered a chillingly competent result.`
     ]
   },
   NodKrai: { 
     emoji: '🌨️', element: 'Abyssal Frost', color: '#8b9bb4', 
     image: 'https://static.wikia.nocookie.net/gensin-impact/images/3/37/Talent_Law_of_the_New_Moon.png/revision/latest?cb=20260115185658',
     desc: (s, name) => [
-      `Lost in the blinding snow of complex variables, ${name}'s traversal of this introductory module was marked by hesitation and wandering. The fundamental truths proved elusive, leading to a session defined by stillness and fragmented focus.`,
-      "Nod'Krai represents the frozen edge of the map where travelers often lose their way. Yet, pushing through a difficult asynchronous lecture and arriving at the end—regardless of the final score—is its own form of abyssal victory."
+      `Lost in the dark depths of complex variables, your traversal was marked by long silences and fragmented focus. The fundamental truths remained elusive, leading to a session consumed by the void.`,
+      `Yet, surviving the abyssal corruption and reaching the end is a victory on its own. The Sinner welcomes those who stumble in the dark.`
     ]
   }
 };
@@ -669,8 +666,8 @@ function _renderResult(name, analysis, attempts) {
   var html = `
     <div id="screenshot-container" style="position: relative; overflow: hidden; background-color: var(--bg-base); border: 1px solid var(--border-glow); border-radius: 12px; padding: 40px; margin-bottom: 24px;">
       
-      <!-- Centralized Elemental Glow -->
-      <div style="position: absolute; inset: 0; background: radial-gradient(circle at 50% 30%, var(--nation-tint) 0%, transparent 65%); opacity: 0.75; z-index: 1;"></div>
+      <!-- Centralized Elemental Glow - Fixed legibility -->
+      <div style="position: absolute; inset: 0; background: radial-gradient(circle at 50% 50%, var(--nation-tint) 0%, transparent 60%); opacity: 0.15; z-index: 1;"></div>
       
       <!-- Captured Stars -->
       <div class="stars"></div><div class="stars stars2"></div>
@@ -696,7 +693,7 @@ function _renderResult(name, analysis, attempts) {
         </div>
         
         <div class="tr-lore-card">
-          <span class="tr-section-label" style="color: ${col}">Archivist's Reading</span>
+          <span class="tr-section-label" style="color: ${col}">Mona's Astrological Reading</span>
           ${paras.map(p => `<p>${_esc(p)}</p>`).join('')}
         </div>
       </div>
