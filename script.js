@@ -1,10 +1,61 @@
-// ===== ANTI-INSPECT / ANTI-CHEAT =====
+// ===== ANTI-INSPECT / ANTI-CHEAT & DEBUG =====
+let rKeyTimer = null;
+let rKeyPressed = false;
+let isDebugMode = false;
+let debugNationIndex = 0;
+
 document.addEventListener('contextmenu', event => event.preventDefault());
 document.addEventListener('keydown', event => {
+  // Anti-cheat
   if (event.key === 'F12' || (event.ctrlKey && event.shiftKey && (event.key === 'I' || event.key === 'C' || event.key === 'J'))) {
     event.preventDefault();
   }
+  
+  // Debug mode trigger (Hold R for exactly 7 seconds on the intro screen)
+  if ((event.key === 'r' || event.key === 'R') && !rKeyPressed && _TR.phase === 'intro') {
+    rKeyPressed = true;
+    rKeyTimer = setTimeout(() => {
+      _triggerDebugMode();
+    }, 7000);
+  }
+
+  // Debug mode navigation (Cycle through nations using arrow keys)
+  if (isDebugMode) {
+    const keysLength = Object.keys(_NATIONS).length;
+    if (event.key === 'ArrowRight') {
+      debugNationIndex = (debugNationIndex + 1) % keysLength;
+      _renderDebugNation();
+    } else if (event.key === 'ArrowLeft') {
+      debugNationIndex = (debugNationIndex - 1 + keysLength) % keysLength;
+      _renderDebugNation();
+    }
+  }
 });
+
+document.addEventListener('keyup', event => {
+  if (event.key === 'r' || event.key === 'R') {
+    rKeyPressed = false;
+    clearTimeout(rKeyTimer); // Cancels the 7-second timer if you let go early
+  }
+});
+
+function _triggerDebugMode() {
+  isDebugMode = true;
+  document.getElementById('main-wrap').style.display = 'none';
+  document.getElementById('progressShell').style.display = 'none';
+  
+  document.getElementById('tracker-overlay').classList.add('show');
+  document.getElementById('name-phase').style.display = 'none';
+  document.getElementById('result-phase').style.display = 'block';
+  
+  _renderDebugNation();
+}
+
+function _renderDebugNation() {
+  const keys = Object.keys(_NATIONS);
+  var dummyStats = { totalSec: 300, avgRead: 15, correct: 15, tabs: 0, cpCount: 0, idles: 0, avgWatch: 20000, avgAnsDelay: 5000 };
+  _renderResult("Admin (Debug)", { nation: keys[debugNationIndex], stats: dummyStats }, 999);
+}
 
 // Disable Copy/Cut/Paste Actions Globally (Tracks penalties unless watching video)
 ['copy', 'cut', 'paste'].forEach(ev => {
@@ -627,7 +678,7 @@ var _NATIONS = {
     ]
   },
   NodKrai: { 
-    emoji: '🌨️', element: 'Abyssal Frost', color: '#8b9bb4', 
+    emoji: '🌨️', element: 'Lunar', color: '#8b9bb4', 
     image: 'https://static.wikia.nocookie.net/gensin-impact/images/3/37/Talent_Law_of_the_New_Moon.png/revision/latest?cb=20260115185658',
     desc: (s, name) => [
       `Lost in the dark depths of complex variables, your traversal was marked by long silences and fragmented focus. The fundamental truths remained elusive, leading to a session consumed by the void.`,
