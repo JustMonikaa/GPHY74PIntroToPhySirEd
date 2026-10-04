@@ -679,10 +679,10 @@ var _NATIONS = {
   },
   NodKrai: { 
     emoji: '🌨️', element: 'Lunar', color: '#8b9bb4', 
-    image: 'https://static.wikia.nocookie.net/gensin-impact/images/3/37/Talent_Law_of_the_New_Moon.png/revision/latest?cb=20260115185658',
+    image: 'https://static.nanoka.cc/assets/gi/Skill_E_Columbina_01.webp',
     desc: (s, name) => [
-      `Lost in the dark depths of complex variables, your traversal was marked by long silences and fragmented focus. The fundamental truths remained elusive, leading to a session consumed by the void.`,
-      `Yet, surviving the abyssal corruption and reaching the end is a victory on its own. The Sinner welcomes those who stumble in the dark.`
+      `Ethereal and completely detached from the physical laws of the universe, your traversal was marked by long silences and wandering thoughts. The records show you barely glanced at the archives, letting the fundamental truths slip away like a forgotten song, leading to a session consumed by daydreams and idle moments.`,
+      `Nod'Krai is the realm of the lost, where the strict rules of reality simply fade into the cold. Finding comfort in that quiet stillness rather than chasing a perfect score is a unique path of its own. The Damselette, Columbina, smiles at your dreamy wandering, singing a gentle lullaby for a student who prefers beautiful illusions over the harsh mechanics of physics.`
     ]
   }
 };
